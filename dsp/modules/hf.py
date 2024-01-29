@@ -30,7 +30,8 @@ def openai_to_hf(**kwargs):
 
 class HFModel(LM):
     def __init__(self, model: str, checkpoint: Optional[str] = None, is_client: bool = False,
-                 hf_device_map: Literal["auto", "balanced", "balanced_low_0", "sequential"] = "auto"):
+                 hf_device_map: Literal["auto", "balanced", "balanced_low_0", "sequential"] = "auto",
+                 model_kwargs: Optional[dict] = None):
         """wrapper for Hugging Face models
 
         Args:
@@ -38,7 +39,9 @@ class HFModel(LM):
             checkpoint (str, optional): load specific checkpoints of the model. Defaults to None.
             is_client (bool, optional): whether to access models via client. Defaults to False.
             hf_device_map (str, optional): HF config strategy to load the model. 
-                Recommeded to use "auto", which will help loading large models using accelerate. Defaults to "auto".
+            Recommeded to use "auto", which will help loading large models using accelerate. Defaults to "auto".
+            model_kwargs (dict, optional): additional kwargs to pass to the model. Defaults to None.
+
         """
         try:
             from transformers import AutoModelForSeq2SeqLM, AutoModelForCausalLM, AutoTokenizer, AutoConfig
@@ -71,9 +74,9 @@ class HFModel(LM):
                     #     self.model = AutoModelClass.from_pretrained(peft_config.base_model_name_or_path, return_dict=True, load_in_8bit=True, device_map=hf_device_map)
                     #     self.model = PeftModel.from_pretrained(self.model, checkpoint)
                     # else:
-                    self.model = AutoModelClass.from_pretrained(checkpoint).to("cuda")
+                    self.model = AutoModelClass.from_pretrained(checkpoint, **model_kwargs).to("cuda")
                 else:
-                    self.model = AutoModelClass.from_pretrained(model).to("cuda")
+                    self.model = AutoModelClass.from_pretrained(model, **model_kwargs).to("cuda")
                 self.drop_prompt_from_output = False
             except ValueError:
                 self.model = AutoModelForCausalLM.from_pretrained(
